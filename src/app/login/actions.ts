@@ -18,7 +18,9 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
 
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithPassword({ email: resolved.email, password })
-  if (error) return { error: LOGIN_ERRORS.invalid, login }
+  if (error) {
+    return { error: error.code === 'invalid_credentials' ? LOGIN_ERRORS.invalid : LOGIN_ERRORS.unavailable, login }
+  }
 
   const ctx = await loadAccountContext(supabase)
   const home = ctx ? homePathFor(ctx) : '/login?error=no-access'
