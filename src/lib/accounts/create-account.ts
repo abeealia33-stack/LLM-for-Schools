@@ -1,8 +1,9 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
-  formatUsername, generateTempPassword, internalEmailFor, nextUsernameCandidate, usernameLocal,
+  formatUsername, internalEmailFor, nextUsernameCandidate, usernameLocal,
 } from './credentials'
+import { generateTempPassword } from './temp-password'
 
 export type Credentials = {
   userId: string

@@ -1,7 +1,7 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAccount, type Credentials } from '@/lib/accounts/create-account'
-import { generateTempPassword } from '@/lib/accounts/credentials'
+import { generateTempPassword } from '@/lib/accounts/temp-password'
 import type { AdminAccountInput, NewSchoolInput } from './validation'
 
 export class SlugTakenError extends Error {
