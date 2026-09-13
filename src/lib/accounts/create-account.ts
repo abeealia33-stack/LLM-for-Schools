@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   formatUsername, internalEmailFor, nextUsernameCandidate, usernameLocal,
 } from './credentials'
+import { bestEffort } from './best-effort'
 import { generateTempPassword } from './temp-password'
 
 export type Credentials = {
@@ -21,15 +22,6 @@ export class AccountExistsError extends Error {
 export class ReservedEmailError extends Error {
   constructor(accountDomain: string) {
     super(`Emails on ${accountDomain} are reserved for generated usernames`)
-  }
-}
-
-/** Cleanup helper: attempt the operation but swallow errors so the original error is preserved */
-async function bestEffort(fn: () => Promise<unknown>) {
-  try {
-    await fn()
-  } catch {
-    // cleanup is best-effort; original error wins
   }
 }
 
@@ -88,7 +80,7 @@ export async function createAccount(
   })
   if (profileError) {
     const userId = created.user.id
-    await bestEffort(async () => admin.auth.admin.deleteUser(userId))
+    await bestEffort(`delete auth user ${userId}`, () => admin.auth.admin.deleteUser(userId))
     throw profileError
   }
 

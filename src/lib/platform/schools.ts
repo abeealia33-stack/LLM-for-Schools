@@ -1,5 +1,6 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { bestEffort } from '@/lib/accounts/best-effort'
 import { createAccount, type Credentials } from '@/lib/accounts/create-account'
 import { generateTempPassword } from '@/lib/accounts/temp-password'
 import type { AdminAccountInput, NewSchoolInput } from './validation'
@@ -17,15 +18,6 @@ export class LastAdminError extends Error {
 export class NotSchoolAdminError extends Error {
   constructor() {
     super('That person is not an admin of this school')
-  }
-}
-
-/** Cleanup helper: attempt the operation but swallow errors so the original error is preserved */
-async function bestEffort(fn: () => Promise<unknown>) {
-  try {
-    await fn()
-  } catch {
-    // cleanup is best-effort; original error wins
   }
 }
 
@@ -66,9 +58,9 @@ export async function createSchoolWithAdmin(
   } catch (e) {
     if (credentials) {
       const userId = credentials.userId
-      await bestEffort(async () => admin.auth.admin.deleteUser(userId))
+      await bestEffort(`delete auth user ${userId}`, () => admin.auth.admin.deleteUser(userId))
     }
-    await bestEffort(async () => admin.from('schools').delete().eq('id', school.id))
+    await bestEffort(`delete school ${school.id}`, () => admin.from('schools').delete().eq('id', school.id))
     throw e
   }
 }
@@ -92,7 +84,7 @@ export async function addSchoolAdmin(
     .insert({ school_id: schoolId, user_id: credentials.userId, role: 'admin' })
   if (mErr) {
     const userId = credentials.userId
-    await bestEffort(async () => admin.auth.admin.deleteUser(userId))
+    await bestEffort(`delete auth user ${userId}`, () => admin.auth.admin.deleteUser(userId))
     throw mErr
   }
   return credentials
