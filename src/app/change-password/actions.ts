@@ -1,0 +1,42 @@
+'use server'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { loadAccountContext } from '@/lib/auth/account-context'
+import { homePathFor } from '@/lib/auth/home-path'
+import { passwordSchema, toFieldErrors } from '@/lib/platform/validation'
+
+export type PasswordState = { errors: Record<string, string> }
+
+export async function changePasswordAction(_prev: PasswordState, formData: FormData): Promise<PasswordState> {
+  const parsed = passwordSchema.safeParse({
+    password: String(formData.get('password') ?? ''),
+    confirm: String(formData.get('confirm') ?? ''),
+  })
+  if (!parsed.success) return { errors: toFieldErrors(parsed.error) }
+
+  const supabase = await createClient()
+  const ctx = await loadAccountContext(supabase)
+  if (!ctx) redirect('/login')
+
+  const { error } = await supabase.auth.updateUser({ password: parsed.data.password })
+  if (error) {
+    return {
+      errors: {
+        password:
+          error.code === 'same_password'
+            ? 'Choose a password different from the temporary one'
+            : 'Could not change the password. Try again.',
+      },
+    }
+  }
+
+  const { error: profileError } = await createAdminClient()
+    .from('profiles')
+    .update({ must_change_password: false })
+    .eq('id', ctx.userId)
+  if (profileError) throw profileError
+
+  const home = homePathFor({ ...ctx, mustChangePassword: false })
+  redirect(home.startsWith('/login') ? `/logout?next=${encodeURIComponent(home)}` : home)
+}
