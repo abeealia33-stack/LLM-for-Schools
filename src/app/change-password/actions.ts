@@ -35,7 +35,14 @@ export async function changePasswordAction(_prev: PasswordState, formData: FormD
     .from('profiles')
     .update({ must_change_password: false })
     .eq('id', ctx.userId)
-  if (profileError) throw profileError
+  if (profileError) {
+    return {
+      errors: {
+        password:
+          "Your new password was saved, but setup didn't finish. Log out, log in with your new password, and choose another new password.",
+      },
+    }
+  }
 
   const home = homePathFor({ ...ctx, mustChangePassword: false })
   redirect(home.startsWith('/login') ? `/logout?next=${encodeURIComponent(home)}` : home)
