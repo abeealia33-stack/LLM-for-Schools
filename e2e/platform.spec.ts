@@ -47,7 +47,7 @@ test('suspending a school blocks its admin at login; reactivating restores acces
 
   await logout(page)
   await login(page, schoolAdmin.email, schoolAdmin.password)
-  await expect(page.getByRole('alert')).toHaveText("Your school's account is inactive. Contact your school.")
+  await expect(page.getByTestId('login-error')).toHaveText("Your school's account is inactive. Contact your school.")
 
   await login(page, boss.email, boss.password)
   await page.goto(`/platform/schools/${school.id}`)
@@ -72,7 +72,7 @@ test('a signed-in admin is signed out on their next request after suspension', a
   await page.reload()
 
   await expect(page).toHaveURL(/\/login\?error=suspended$/)
-  await expect(page.getByRole('alert')).toHaveText("Your school's account is inactive. Contact your school.")
+  await expect(page.getByTestId('login-error')).toHaveText("Your school's account is inactive. Contact your school.")
   await page.goto('/admin')
   await expect(page).toHaveURL(/\/login$/) // session is gone, not just redirected
 })

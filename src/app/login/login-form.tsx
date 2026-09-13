@@ -20,7 +20,7 @@ export function LoginForm({ initialError }: { initialError: string | null }) {
         <input name="password" type="password" autoComplete="current-password" required className="input" />
       </label>
       {state.error && (
-        <p role="alert" className="field-error">
+        <p role="alert" data-testid="login-error" className="field-error">
           {state.error}
         </p>
       )}
