@@ -77,6 +77,10 @@ export async function cleanupTestData() {
   // listUsers is paginated; test runs create well under 1000 users
   const { data } = await admin.auth.admin.listUsers({ perPage: 1000 })
   for (const u of data?.users ?? []) {
-    if (u.email?.startsWith(TEST_PREFIX)) await admin.auth.admin.deleteUser(u.id)
+    const email = u.email ?? ''
+    // real test emails start with test-; generated usernames embed the test- school slug
+    if (email.startsWith(TEST_PREFIX) || email.includes(`--${TEST_PREFIX}`)) {
+      await admin.auth.admin.deleteUser(u.id)
+    }
   }
 }
