@@ -8,6 +8,11 @@ export function ChangePasswordForm() {
   return (
     <form action={action} className="space-y-4">
       <label className="block">
+        <span className="text-sm font-medium">Current (temporary) password</span>
+        <input name="current" type="password" autoComplete="current-password" required className="input" />
+        {state.errors.current && <p className="field-error">{state.errors.current}</p>}
+      </label>
+      <label className="block">
         <span className="text-sm font-medium">New password</span>
         <input name="password" type="password" autoComplete="new-password" required className="input" />
         {state.errors.password && <p className="field-error">{state.errors.password}</p>}

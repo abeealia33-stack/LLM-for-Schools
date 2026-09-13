@@ -25,6 +25,7 @@ test('super admin creates a school; its admin sets a password and reaches the ad
   await logout(page)
   await login(page, adminLogin, tempPassword)
   await expect(page).toHaveURL(/\/change-password$/)
+  await page.getByLabel('Current (temporary) password').fill(tempPassword)
   await page.getByLabel('New password').fill('NewPassword123')
   await page.getByLabel('Type it again').fill('NewPassword123')
   await page.getByRole('button', { name: 'Save password' }).click()

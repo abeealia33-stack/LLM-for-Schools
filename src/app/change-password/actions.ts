@@ -10,6 +10,7 @@ export type PasswordState = { errors: Record<string, string> }
 
 export async function changePasswordAction(_prev: PasswordState, formData: FormData): Promise<PasswordState> {
   const parsed = passwordSchema.safeParse({
+    current: String(formData.get('current') ?? ''),
     password: String(formData.get('password') ?? ''),
     confirm: String(formData.get('confirm') ?? ''),
   })
@@ -19,7 +20,16 @@ export async function changePasswordAction(_prev: PasswordState, formData: FormD
   const ctx = await loadAccountContext(supabase)
   if (!ctx) redirect('/login')
 
-  const { error } = await supabase.auth.updateUser({ password: parsed.data.password })
+  const { current, password } = parsed.data
+  if (password === current) {
+    return { errors: { password: 'Choose a password different from the temporary one' } }
+  }
+  const email = (await supabase.auth.getClaims()).data?.claims?.email
+  if (!email) return { errors: { current: 'Current password is incorrect' } }
+  const { error: currentError } = await supabase.auth.signInWithPassword({ email, password: current })
+  if (currentError) return { errors: { current: 'Current password is incorrect' } }
+
+  const { error } = await supabase.auth.updateUser({ password })
   if (error) {
     return {
       errors: {

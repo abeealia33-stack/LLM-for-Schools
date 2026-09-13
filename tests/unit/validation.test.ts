@@ -36,9 +36,15 @@ describe('newSchoolSchema', () => {
 
 describe('passwordSchema', () => {
   it('requires 8+ characters and matching confirmation', () => {
-    expect(passwordSchema.safeParse({ password: 'short', confirm: 'short' }).success).toBe(false)
-    const mismatch = passwordSchema.safeParse({ password: 'longenough1', confirm: 'longenough2' })
+    expect(passwordSchema.safeParse({ current: 'Temp12345', password: 'short', confirm: 'short' }).success).toBe(false)
+    const mismatch = passwordSchema.safeParse({ current: 'Temp12345', password: 'longenough1', confirm: 'longenough2' })
     expect(toFieldErrors(mismatch.error!)).toEqual({ confirm: 'Passwords do not match' })
-    expect(passwordSchema.safeParse({ password: 'longenough1', confirm: 'longenough1' }).success).toBe(true)
+    expect(passwordSchema.safeParse({ current: 'Temp12345', password: 'longenough1', confirm: 'longenough1' }).success).toBe(true)
+  })
+
+  it('requires the current password', () => {
+    const r = passwordSchema.safeParse({ current: '', password: 'longenough1', confirm: 'longenough1' })
+    expect(r.success).toBe(false)
+    expect(toFieldErrors(r.error!)).toEqual({ current: 'Enter your current password' })
   })
 })

@@ -42,6 +42,7 @@ export const newSchoolSchema = z.object({
 
 export const passwordSchema = z
   .object({
+    current: z.string().min(1, 'Enter your current password'),
     password: z.string().min(8, 'Use at least 8 characters').max(72, 'Use at most 72 characters'),
     confirm: z.string(),
   })
