@@ -44,6 +44,10 @@ alter table public.schools enable row level security;
 alter table public.profiles enable row level security;
 alter table public.memberships enable row level security;
 
+revoke all on table public.schools, public.profiles, public.memberships from anon, authenticated;
+grant select on table public.schools, public.profiles, public.memberships to authenticated;
+grant all on table public.schools, public.profiles, public.memberships to service_role;
+
 create function public.is_super_admin()
 returns boolean
 language sql stable security definer set search_path = ''
