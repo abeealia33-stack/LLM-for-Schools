@@ -6,6 +6,7 @@ import {
   addSchoolAdmin, createSchoolWithAdmin, LastAdminError, removeSchoolAdmin,
   resetSchoolAdminPassword, setSchoolStatus, SlugTakenError,
 } from '@/lib/platform/schools'
+import { ReservedEmailError } from '@/lib/accounts/create-account'
 import { resolveLoginEmail } from '@/lib/auth/login-identifier'
 import type { NewSchoolInput } from '@/lib/platform/validation'
 
@@ -63,6 +64,14 @@ describe('createSchoolWithAdmin', () => {
     await expect(createSchoolWithAdmin(admin, { ...input, name: 'Other' }, DOMAIN)).rejects.toBeInstanceOf(SlugTakenError)
     const { count } = await admin.from('schools').select('id', { count: 'exact', head: true }).eq('slug', input.slug)
     expect(count).toBe(1)
+  })
+
+  it('rejects an admin email on the reserved account domain and leaves no school behind', async () => {
+    const admin = adminClient()
+    const input = schoolInput({ admin: { fullName: 'Reserved', email: `someone@${DOMAIN}`, phone: null } })
+    await expect(createSchoolWithAdmin(admin, input, DOMAIN)).rejects.toBeInstanceOf(ReservedEmailError)
+    const { count } = await admin.from('schools').select('id', { count: 'exact', head: true }).eq('slug', input.slug)
+    expect(count).toBe(0)
   })
 })
 

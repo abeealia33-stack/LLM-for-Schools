@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { serverEnv } from '@/lib/env'
 import { newSchoolFromForm, newSchoolSchema, toFieldErrors } from '@/lib/platform/validation'
 import { createSchoolWithAdmin, SlugTakenError } from '@/lib/platform/schools'
-import { AccountExistsError, type Credentials } from '@/lib/accounts/create-account'
+import { AccountExistsError, ReservedEmailError, type Credentials } from '@/lib/accounts/create-account'
 
 export type NewSchoolState = {
   errors: Record<string, string>
@@ -30,7 +30,7 @@ export async function createSchoolAction(_prev: NewSchoolState, formData: FormDa
     return { errors: {}, values: {}, created: { schoolId, schoolName: parsed.data.name, credentials } }
   } catch (e) {
     if (e instanceof SlugTakenError) return { errors: { slug: e.message }, values, created: null }
-    if (e instanceof AccountExistsError) return { errors: { 'admin.email': e.message }, values, created: null }
+    if (e instanceof AccountExistsError || e instanceof ReservedEmailError) return { errors: { 'admin.email': e.message }, values, created: null }
     throw e
   }
 }

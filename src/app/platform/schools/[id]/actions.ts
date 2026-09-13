@@ -9,7 +9,7 @@ import {
   addSchoolAdmin, LastAdminError, NotSchoolAdminError, removeSchoolAdmin,
   resetSchoolAdminPassword, setSchoolStatus,
 } from '@/lib/platform/schools'
-import { AccountExistsError, type Credentials } from '@/lib/accounts/create-account'
+import { AccountExistsError, ReservedEmailError, type Credentials } from '@/lib/accounts/create-account'
 
 export type AddAdminState = { errors: Record<string, string>; created: Credentials | null }
 export type RowState = { error: string | null; reset: { login: string; temporaryPassword: string } | null }
@@ -25,7 +25,7 @@ export async function addAdminAction(schoolId: string, _prev: AddAdminState, for
     revalidatePath(`/platform/schools/${schoolId}`)
     return { errors: {}, created }
   } catch (e) {
-    if (e instanceof AccountExistsError) return { errors: { email: e.message }, created: null }
+    if (e instanceof AccountExistsError || e instanceof ReservedEmailError) return { errors: { email: e.message }, created: null }
     throw e
   }
 }

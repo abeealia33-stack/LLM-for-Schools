@@ -17,6 +17,12 @@ export class AccountExistsError extends Error {
   }
 }
 
+export class ReservedEmailError extends Error {
+  constructor(accountDomain: string) {
+    super(`Emails on ${accountDomain} are reserved for generated usernames`)
+  }
+}
+
 /** Cleanup helper: attempt the operation but swallow errors so the original error is preserved */
 async function bestEffort(fn: () => Promise<unknown>) {
   try {
@@ -37,6 +43,11 @@ export async function createAccount(
   },
   accountDomain: string,
 ): Promise<Credentials> {
+  if (input.email) {
+    const domain = input.email.slice(input.email.lastIndexOf('@') + 1).toLowerCase()
+    if (domain === accountDomain.toLowerCase()) throw new ReservedEmailError(accountDomain)
+  }
+
   let username: string | null = null
   let authEmail: string
 
