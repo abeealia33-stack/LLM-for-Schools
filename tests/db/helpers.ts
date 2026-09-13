@@ -10,6 +10,12 @@ export function adminClient(): SupabaseClient {
   })
 }
 
+export function anonClient(): SupabaseClient {
+  return createClient(url(), process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+}
+
 export type TestUser = { id: string; email: string; password: string }
 
 export async function createTestUser(

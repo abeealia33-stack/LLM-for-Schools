@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
-  addMember, cleanupTestData, createTestSchool, createTestUser, signInAs, type TestUser,
+  addMember, adminClient, anonClient, cleanupTestData, createTestSchool, createTestUser, signInAs, type TestUser,
 } from './helpers'
 
 let s1: { id: string }, s2: { id: string }, suspended: { id: string }
@@ -99,5 +99,46 @@ describe('profiles RLS', () => {
       .select('id')
       .in('id', [admin1.id, teacher1.id, student1.id, admin2.id])
     expect(ids(data)).toEqual([admin1.id, admin2.id].sort())
+  })
+})
+
+describe('write denial', () => {
+  it('a user cannot make themselves super admin', async () => {
+    await teacher1C.from('profiles').update({ is_super_admin: true }).eq('id', teacher1.id)
+    const { data } = await adminClient().from('profiles').select('is_super_admin').eq('id', teacher1.id).single()
+    expect(data?.is_super_admin).toBe(false)
+  })
+
+  it('a teacher cannot insert an admin membership for another school', async () => {
+    const { error } = await teacher1C
+      .from('memberships')
+      .insert({ school_id: s2.id, user_id: teacher1.id, role: 'admin' })
+    expect(error).not.toBeNull()
+    const { data } = await adminClient()
+      .from('memberships').select('user_id').eq('school_id', s2.id).eq('user_id', teacher1.id)
+    expect(data ?? []).toEqual([])
+  })
+
+  it('a school admin cannot change their own membership', async () => {
+    await admin1C.from('memberships').update({ role: 'teacher', active: false }).eq('school_id', s1.id).eq('user_id', admin1.id)
+    const { data } = await adminClient()
+      .from('memberships').select('role, active').eq('school_id', s1.id).eq('user_id', admin1.id).single()
+    expect(data).toEqual({ role: 'admin', active: true })
+  })
+
+  it('a school admin cannot change their school status', async () => {
+    await admin1C.from('schools').update({ status: 'suspended' }).eq('id', s1.id)
+    const { data } = await adminClient().from('schools').select('status').eq('id', s1.id).single()
+    expect(data?.status).toBe('active')
+  })
+
+  it('anon reads nothing and cannot call the RPCs', async () => {
+    const anon = anonClient()
+    for (const table of ['schools', 'profiles', 'memberships']) {
+      const { data } = await anon.from(table).select('*')
+      expect((data ?? []).length).toBe(0)
+    }
+    expect((await anon.rpc('my_memberships')).error).not.toBeNull()
+    expect((await anon.rpc('platform_school_overview')).error).not.toBeNull()
   })
 })
