@@ -20,6 +20,15 @@ export class NotSchoolAdminError extends Error {
   }
 }
 
+/** Cleanup helper: attempt the operation but swallow errors so the original error is preserved */
+async function bestEffort(fn: () => Promise<unknown>) {
+  try {
+    await fn()
+  } catch {
+    // cleanup is best-effort; original error wins
+  }
+}
+
 export async function createSchoolWithAdmin(
   admin: SupabaseClient,
   input: NewSchoolInput,
@@ -55,8 +64,11 @@ export async function createSchoolWithAdmin(
     if (mErr) throw mErr
     return { schoolId: school.id, credentials }
   } catch (e) {
-    if (credentials) await admin.auth.admin.deleteUser(credentials.userId)
-    await admin.from('schools').delete().eq('id', school.id)
+    if (credentials) {
+      const userId = credentials.userId
+      await bestEffort(async () => admin.auth.admin.deleteUser(userId))
+    }
+    await bestEffort(async () => admin.from('schools').delete().eq('id', school.id))
     throw e
   }
 }
@@ -79,7 +91,8 @@ export async function addSchoolAdmin(
     .from('memberships')
     .insert({ school_id: schoolId, user_id: credentials.userId, role: 'admin' })
   if (mErr) {
-    await admin.auth.admin.deleteUser(credentials.userId)
+    const userId = credentials.userId
+    await bestEffort(async () => admin.auth.admin.deleteUser(userId))
     throw mErr
   }
   return credentials

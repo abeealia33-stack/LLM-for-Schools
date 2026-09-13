@@ -17,6 +17,15 @@ export class AccountExistsError extends Error {
   }
 }
 
+/** Cleanup helper: attempt the operation but swallow errors so the original error is preserved */
+async function bestEffort(fn: () => Promise<unknown>) {
+  try {
+    await fn()
+  } catch {
+    // cleanup is best-effort; original error wins
+  }
+}
+
 export async function createAccount(
   admin: SupabaseClient,
   input: {
@@ -66,7 +75,8 @@ export async function createAccount(
     must_change_password: true,
   })
   if (profileError) {
-    await admin.auth.admin.deleteUser(created.user.id)
+    const userId = created.user.id
+    await bestEffort(async () => admin.auth.admin.deleteUser(userId))
     throw profileError
   }
 
